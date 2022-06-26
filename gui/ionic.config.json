@@ -1,0 +1,7 @@
+{
+  "name": "dSalary",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}

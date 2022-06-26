@@ -1,0 +1,7 @@
+{
+  "name": "ABDAO",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
