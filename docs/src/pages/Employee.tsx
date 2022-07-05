@@ -14,7 +14,7 @@ import CoinbaseWalletSDK from '@coinbase/wallet-sdk';
 let ethereum: any = (window as any).ethereum;
 let provider: providers.Web3Provider | undefined; 
 let signer: providers.JsonRpcSigner;
-let dSalary: any;
+let Solteria: any;
 
 ethereum.on('chainChanged', (_chainId: string) => (this as any).reset());
 ethereum.on('accountsChanged', (accounts: any) => {(this as any).reset()});
@@ -23,7 +23,7 @@ const providerOptions = {
   coinbasewallet: {
     package: CoinbaseWalletSDK, // Required
     options: {
-      appName: "dSalary", // Required
+      appName: "Solteria", // Required
       infuraId: "c4fe7eca7f744d1d83fc99a06ed38c2a", // Required
       rpc: "", // Optional if `infuraId` is provided; otherwise it's required
       chainId: 1, // Optional. It defaults to 1 if not provided
@@ -116,39 +116,39 @@ const Employee: React.FC = () => {
     provider = providertemp;
     signer = provider.getSigner();
     const addr = await signer.getAddress();
-    dSalary = new Contract("0xDF3047d476C892bB3C8339723aC86Ce570291310", abi, signer);
+    Solteria = new Contract("0xDF3047d476C892bB3C8339723aC86Ce570291310", abi, signer);
     return addr;
   }
     
   
   async function _getEmployee() {
-    await dSalary.getEmployee()
+    await Solteria.getEmployee()
     .then((result:any) => {alert("You are an Employee!")})
     .catch((error:any) => {alert("You are not an Employee!")});
   }
   
   async function _grantRoleEmployee() {
-    await dSalary.grantRoleEmployee()
+    await Solteria.grantRoleEmployee()
   }
   
   async function _revokeRoleEmployee() {
-    await dSalary.revokeRoleEmployee();
+    await Solteria.revokeRoleEmployee();
   }
   
   async function _revokeRoleEmployeeExt() {}
   
   
   async function _withdraw() {
-    await dSalary.withdraw()
+    await Solteria.withdraw()
   }
     
   async function _getTokenId() {
-    await dSalary.getTokenId()
+    await Solteria.getTokenId()
   
   }
   
   async function _getIPFSHash() {
-    await dSalary.getIPFSHash()
+    await Solteria.getIPFSHash()
   
   }
 
@@ -178,13 +178,13 @@ async function signMessage() {
     <IonPage>
     <IonHeader>
       <IonToolbar>
-        <IonTitle>dSalary Dashboard | Employee Perspective</IonTitle>
+        <IonTitle>Solteria Dashboard | Employee Perspective</IonTitle>
       </IonToolbar>
     </IonHeader>
     <IonContent fullscreen>
       <IonHeader collapse="condense">
         <IonToolbar>
-          <IonTitle size="large">dSalary Dashboard | Employee Perspective</IonTitle>
+          <IonTitle size="large">Solteria Dashboard | Employee Perspective</IonTitle>
         </IonToolbar>
       </IonHeader>
       

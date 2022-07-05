@@ -16,13 +16,13 @@ import CoinbaseWalletSDK from '@coinbase/wallet-sdk';
 let ethereum: any = (window as any).ethereum;
 let provider: providers.Web3Provider | undefined; 
 let signer: providers.JsonRpcSigner;
-let dSalary: any;
+let Solteria: any;
 
 const providerOptions = {
   coinbasewallet: {
     package: CoinbaseWalletSDK, // Required
     options: {
-      appName: "dSalary", // Required
+      appName: "Solteria", // Required
       infuraId: "c4fe7eca7f744d1d83fc99a06ed38c2a", // Required
       rpc: "", // Optional if `infuraId` is provided; otherwise it's required
       chainId: 1, // Optional. It defaults to 1 if not provided
@@ -121,7 +121,7 @@ async function connect() {
   provider = providertemp;
   signer = provider.getSigner();
   const addr = await signer.getAddress();
-  dSalary = new Contract("0xDF3047d476C892bB3C8339723aC86Ce570291310", abi, signer);
+  Solteria = new Contract("0xDF3047d476C892bB3C8339723aC86Ce570291310", abi, signer);
   return addr;
 }
 
@@ -136,31 +136,31 @@ async function signMessage() {
 }
 
 async function _grantRoleEmployer() {
-  await dSalary.grantRoleEmployer();
+  await Solteria.grantRoleEmployer();
 };
 
 async function _revokeRoleEmployer() {
-  await dSalary.revokeRoleEmployer();
+  await Solteria.revokeRoleEmployer();
 }
 
 async function _getEmployer() {
-  await dSalary.getEmployer()
+  await Solteria.getEmployer()
   .then((result:any) => {alert("You are an Employer!")})
   .catch((error:any) => {alert("You are not an Employer!")});
 }
 
 async function _getEmployee() {
-  await dSalary.getEmployee()
+  await Solteria.getEmployee()
   .then((result:any) => {alert("You are an Employee!")})
   .catch((error:any) => {alert("You are not an Employee!")});
 }
 
 async function _grantRoleEmployee() {
-  await dSalary.grantRoleEmployee()
+  await Solteria.grantRoleEmployee()
 }
 
 async function _revokeRoleEmployee() {
-  await dSalary.revokeRoleEmployee();
+  await Solteria.revokeRoleEmployee();
 }
 
 async function _revokeRoleEmployeeExt() {}
@@ -187,24 +187,24 @@ const cid:any =
 .catch(( error ) => {
   return "error"
 })
-await dSalary.createWA(address, cid, utils.parseEther(salary), period, options)
+await Solteria.createWA(address, cid, utils.parseEther(salary), period, options)
 return cid;
 };
 
 
 async function _deposit(val:any) {
   const options = {value: utils.parseEther(val)}
-  await dSalary.deposit(options)
+  await Solteria.deposit(options)
 
 }
 
 async function _getTokenId() {
-  await dSalary.getTokenId()
+  await Solteria.getTokenId()
 
 }
 
 async function _getIPFSHash() {
-  await dSalary.getIPFSHash()
+  await Solteria.getIPFSHash()
 
 }
 
@@ -281,13 +281,13 @@ async function ethDecrypt(content: string) {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>dSalary Dashboard | Employer Perspective</IonTitle>
+          <IonTitle>Solteria Dashboard | Employer Perspective</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
           <IonToolbar>
-            <IonTitle size="large">dSalary Dashboard | Employer Perspective</IonTitle>
+            <IonTitle size="large">Solteria Dashboard | Employer Perspective</IonTitle>
           </IonToolbar>
         </IonHeader>
         
