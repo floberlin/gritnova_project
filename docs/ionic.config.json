@@ -1,7 +1,0 @@
-{
-  "name": "Solteria",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react"
-}
