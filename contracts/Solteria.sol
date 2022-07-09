@@ -15,6 +15,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  
 
 contract Solteria is ERC1155Upgradeable, AccessControlUpgradeable, ReentrancyGuard {
+
+    // implementation is currently just a copy of dSalary (https://github.com/floberlin/hackmoney_dSalary)
    
     uint public tokenId;
     mapping (address => uint) public isNFTHolder;
