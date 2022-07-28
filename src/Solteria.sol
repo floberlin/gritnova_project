@@ -1,140 +1,157 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >= 0.8.6;
+
+import "../lib/openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
+import "../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
  
-import https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/token/ERC1155/ERC1155Upgradeable.sol;
-import https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/AccessControlUpgradeable.sol;
- 
-interface tdaoHolder{
+interface Itreasury{
     function whitelist (address addr,uint256 tokenId) external;
+    function withdraw  (address addr, uint256 amount) external;
+    function withdrawReward (address contractor, uint256 id, uint256 amount) external;
 }
  
-contract tDAO is ERC1155Upgradeable, AccessControlUpgradeable  {
+contract Solteria is ERC1155, AccessControl, ReentrancyGuard  {
  
-    string[] public tokenHashIpfs;
-    string[] public transHashIpfs;
-    mapping (string => bool) public _tokenHashExists;
-    mapping (string => bool) public _dataHashExists;
-    mapping (string => string[]) public _mappingExtIdTrans;
-    mapping (string => string) public _mappingExtIdIPFS;
-    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    string private _uri;
- 
-    // Intitializer for upgradable funtionality
-    function initialize() public initializer {
+    string  private _uri; // URI of the token
+    address public treasury = address(0); // treasury contract address
+    uint256 public tokenID = 0; // token ID of the token to be minted
+    bytes32 public constant EMPLOYER_ROLE = keccak256("EMPLOYER_ROLE"); // role of the employer
+    bytes32 public constant CONTRACTOR_ROLE = keccak256("CONTRACTOR_ROLE"); // contractor is the role of the employee who is working for the employer.
+
+    mapping (uint256 => string) public tokenIDtoIPFS; // tokenID to IPFS hash
+    mapping (uint256 => uint256) public tokenIDtoReward; // tokenID to reward
+    mapping (uint256 => address[]) public tokenIDtoClaimers; // array of addresses
+    mapping (uint256 => bool) public tokenIDtoDone; // if the contractor has finished the work
+
+    event TaskCreated(string _ipfsID, uint256 _tokenID, uint256 _reward); // event for when a task is created
+    event TaskClaimed(string _ipfsID, uint256 _tokenID, uint256 _reward); // event for when a task is claimed
+    event TaskCompleted(string _ipfsID, uint256 _tokenID, uint256 _reward); // event for when a task is completed
+    event TaskCancelled(string _ipfsID, uint256 _tokenID, uint256 _reward); // event for when a task is cancelled
+
+    constructor() ERC1155("https://ipfs.io/ipns/k51qzi5uqu5diitbr0kyw2jut5z6d06hm923t1mqaygudw4zf2u1ocbip88ieq/{id}.json") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setURI(https://ipfs.io/ipns/k51qzi5uqu5diitbr0kyw2jut5z6d06hm923t1mqaygudw4zf2u1ocbip88ieq/{id}.json);
-        require(!_tokenHashExists["QmVW35TLuax6cmm9nkSXxWmGvNrEA3WjV3QDwpnuc7UGwV"], "Hash already exists");
-        _tokenHashExists["QmVW35TLuax6cmm9nkSXxWmGvNrEA3WjV3QDwpnuc7UGwV"] = true;
-        tokenHashIpfs.push("QmVW35TLuax6cmm9nkSXxWmGvNrEA3WjV3QDwpnuc7UGwV");
-        _mint(0xB34F9785E71B3903389A880C175E9c912520c1c6, 0, 8000000000, "");
     }
-   
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+
+     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+    
+    /*****************************************/
+
+    // start of role definitions
+    function grantRoleEmployer() public  {
+        require(!hasRole(CONTRACTOR_ROLE, msg.sender), "Caller is already a contractor");
+        grantRole(EMPLOYER_ROLE, msg.sender);
+    }
+
+    function revokeRoleEmployer() public {
+        revokeRole(EMPLOYER_ROLE, msg.sender);
+    }
  
-    // Role definitions
-    function grantRoleValidator(address reqAddr) public  {
+    function grantRoleContractor() public {
+        require(!hasRole(EMPLOYER_ROLE, msg.sender), "Caller is already an employer");
+        grantRole(CONTRACTOR_ROLE, msg.sender);
+    }
+ 
+    function revokeRoleContractor() public {
+        revokeRole(CONTRACTOR_ROLE, msg.sender);
+    }
+    // end of role definitions
+
+    /*****************************************/
+
+    // start of access control definitions
+    function setContract (address addr) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not the admin");
-        grantRole(VALIDATOR_ROLE, reqAddr);
+        treasury = addr;
     }
- 
-    function revokeRoleValidator(address reqAddr) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not the admin");
-        revokeRole(VALIDATOR_ROLE, reqAddr);
+    // end of access control definitions
+
+    /*****************************************/
+
+    // main functions
+
+  function createTask(string memory ipfsID) public payable {
+        require(hasRole(EMPLOYER_ROLE, msg.sender), "Caller is not an employer");
+        require(msg.value > 0, "Please define a reward for the task");
+        uint256 reward = msg.value;
+        _mint(treasury, tokenID, 1, "");
+        payable(treasury).transfer(reward);
+        tokenIDtoIPFS[tokenID] = ipfsID;
+        tokenIDtoReward[tokenID] = reward;
+        emit TaskCreated(ipfsID, tokenID, reward);
+        tokenID++;      
     }
- 
-    function grantRoleMinter(address reqAddr) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not the admin");
-        grantRole(MINTER_ROLE, reqAddr);
+
+    
+  function createPrivateTask (string memory ipfsID, address contractor) public payable {
+        require(hasRole(EMPLOYER_ROLE, msg.sender), "Caller is not an employer");
+        require(msg.value > 0, "Please define a reward for the task");
+        uint256 reward = msg.value;
+        _mint(treasury, tokenID, 1, "");
+        payable(treasury).transfer(reward);
+        tokenIDtoIPFS[tokenID] = ipfsID;
+        emit TaskCreated(ipfsID, tokenID, reward);
+        tokenID++;
+        Itreasury(treasury).whitelist(contractor,tokenID);      
     }
- 
-    function revokeRoleMinter(address reqAddr) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not the admin");
-        revokeRole(MINTER_ROLE, reqAddr);
+
+   function claimTask (string memory ipfsID) public {
+        require(hasRole(CONTRACTOR_ROLE, msg.sender), "Caller is not a contractor");
+        uint256 _tokenID = this.getTokenID(ipfsID);
+        tokenIDtoClaimers[tokenID].push(msg.sender);
+        emit TaskClaimed(tokenIDtoIPFS[_tokenID], _tokenID, tokenIDtoReward[_tokenID]);
     }
- 
-    // Push IPFS data hash associated to token id to blockchain
-    function setData(string memory _hash, string memory _extId) public {
-        require(hasRole(VALIDATOR_ROLE, msg.sender), "Caller is not a validator");
-        require(!_dataHashExists[_hash], "Hash already exists");
-        require(_tokenHashExists[getIpfsId(_extId)], "No associated token found");
-        _dataHashExists[_hash] = true;
-        transHashIpfs.push(_hash);
-        _mappingExtIdTrans[_extId] = transHashIpfs;
+
+    function approveCompletedTask (string memory ipfsID, address contractor) public {
+        require(hasRole(EMPLOYER_ROLE, msg.sender), "Caller is not a employer");
+        uint256 _tokenID = this.getTokenID(ipfsID);
+        tokenIDtoDone[_tokenID] = true;
+        Itreasury(treasury).whitelist(contractor,_tokenID);  
     }
-   
-    // Validate hash
-    function validate(string memory _hash) public view returns (bool) {
-        require(_dataHashExists[_hash], "Hash does not exist");
-        return (true);
-    }
-   
-   // Minting functions
-    function newFT(string memory ipfsId, string memory extId, uint amount) public {
-        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-        require(!_tokenHashExists[ipfsId], "Hash already exists");
-        _tokenHashExists[ipfsId] = true;
-        tokenHashIpfs.push(ipfsId);
-        uint idHash = (tokenHashIpfs.length - 1);
-        _mappingExtIdIPFS[extId] = ipfsId;
-        _mint(msg.sender, idHash, amount, "");
-    }
- 
-function newFTMiddleman(address holderAddress,address toAddress, string memory ipfsId, string memory extId, uint amount) public {
-        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-        require(!_tokenHashExists[ipfsId], "Hash already exists");
-        _tokenHashExists[ipfsId] = true;
-        tokenHashIpfs.push(ipfsId);
-        uint idHash = (tokenHashIpfs.length - 1);
-        _mappingExtIdIPFS[extId] = ipfsId;
-        _mint(msg.sender, idHash, amount, "");
-        tdaoHolder(holderAddress).whitelist(toAddress,idHash);
-        _safeTransferFrom(msg.sender, holderAddress, idHash, amount, "");
-    }
- 
-    function newNFT(string memory ipfsId, string memory extId) public{
-        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-        require(!_tokenHashExists[ipfsId], "Hash already exists");
-        _tokenHashExists[ipfsId] = true;
-        tokenHashIpfs.push(ipfsId);
-        uint idHash = (tokenHashIpfs.length - 1);
-        _mappingExtIdIPFS[extId] = ipfsId;
-        _mint(msg.sender, idHash, 1, "");
-    }  
-   
-   
-    // Get ids
-    function getTokenId (string memory ipfsId) public view returns (uint256) {
+  
+  function completeTask (string memory ipfsID) public {
+    require(hasRole(CONTRACTOR_ROLE, msg.sender), "Caller is not a contractor");
+    uint256 _tokenID = this.getTokenID(ipfsID);
+    require(tokenIDtoDone[_tokenID], "Task completion is not approved by the employer");
+    Itreasury(treasury).withdraw(msg.sender,_tokenID);
+    emit TaskCompleted(tokenIDtoIPFS[_tokenID], _tokenID, tokenIDtoReward[_tokenID]);
+  }
+
+   function claimFunds (string memory ipfsID) public {
+    require(hasRole(CONTRACTOR_ROLE, msg.sender), "Caller is not a contractor");
+    uint256 _tokenID = this.getTokenID(ipfsID);
+    require(tokenIDtoDone[_tokenID], "Task completion is not approved by the employer");
+    require(balanceOf(msg.sender, _tokenID) >= 1, "You have not completed the task yet");
+    uint256 reward = tokenIDtoReward[_tokenID];
+    Itreasury(treasury).withdrawReward(msg.sender,_tokenID, reward);
+  }
+
+//   function deleteTask (string memory ipfsID) public {
+//     require(hasRole(EMPLOYER_ROLE, msg.sender), "Caller is not a employer");
+//     uint256 _tokenID = this.getTokenID(ipfsID);
+//     //tbd
+//   }
+
+  // Get functions
+    function getTokenID (string memory ipfsID) public view returns (uint256) {
         uint256 result;
-        for (uint j = 0; j < tokenHashIpfs.length; j++) {
-            if (compareStrings(tokenHashIpfs[j], ipfsId)) {
+        for (uint j = 0; j <= tokenID; j++) {
+            if (compareStrings(tokenIDtoIPFS[j], ipfsID)) {
                 result = j;
             }
         }
         return result;
     }
- 
-    function getIpfsId (string memory extId) public view returns (string memory) {
-        return _mappingExtIdIPFS[extId];
-    }
-   
-    // Get transactions
-    function getTransactionsExtId (string memory extId) public view returns (string[] memory) {
-        return _mappingExtIdTrans[extId];
+
+    function getClaimers (string memory ipfsID) public view returns (address[] memory) {
+        uint256 _tokenID = this.getTokenID(ipfsID);
+        return tokenIDtoClaimers[_tokenID];
     }
  
-    // Get hashes
-    function getAllDataHashes () public view returns (string[] memory) {
-        return transHashIpfs;
-    }
- 
-    function getDataHash (uint256 tokenId) public view returns (string memory) {
-        return transHashIpfs[tokenId];
-    }
- 
-    // Helper functions
+
+// Helper functions
     function compareStrings(string memory a, string memory b) internal pure returns (bool) {
         return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }  
@@ -144,69 +161,11 @@ function newFTMiddleman(address holderAddress,address toAddress, string memory i
     }
    
     function append(string memory a, string memory b,string memory c ) internal pure returns (string memory) {
- 
-    return string(abi.encodePacked(a, b, c));
- 
-}
+        return string(abi.encodePacked(a, b, c));
+    }
  
    function tokenURI (string memory tokenId) public pure returns (string memory) {
-    return append(https://ipfs.io/ipns/k51qzi5uqu5diitbr0kyw2jut5z6d06hm923t1mqaygudw4zf2u1ocbip88ieq, tokenId, ".json");
-  }
- 
-
-
-
-
-
-  function createTask () public {
-    require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-    require(!_tokenHashExists[ipfsId], "Hash already exists");
-    _tokenHashExists[ipfsId] = true;
-    tokenHashIpfs.push(ipfsId);
-    uint idHash = (tokenHashIpfs.length - 1);
-    _mappingExtIdIPFS[extId] = ipfsId;
-    _mint(msg.sender, idHash, 1, "");
-  }
-
-  function createPrivateTask () public {
-    require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-    require(!_tokenHashExists[ipfsId], "Hash already exists");
-    _tokenHashExists[ipfsId] = true;
-    tokenHashIpfs.push(ipfsId);
-    uint idHash = (tokenHashIpfs.length - 1);
-    _mappingExtIdIPFS[extId] = ipfsId;
-    _mint(msg.sender, idHash, 1, "");
-  }
-
-   function claimTask () public {
-    require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-    require(!_tokenHashExists[ipfsId], "Hash already exists");
-    _tokenHashExists[ipfsId] = true;
-    tokenHashIpfs.push(ipfsId);
-    uint idHash = (tokenHashIpfs.length - 1);
-    _mappingExtIdIPFS[extId] = ipfsId;
-    _mint(msg.sender, idHash, 1, "");
-  }
-
-   function claimFunds () public {
-    require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-    require(!_tokenHashExists[ipfsId], "Hash already exists");
-    _tokenHashExists[ipfsId] = true;
-    tokenHashIpfs.push(ipfsId);
-    uint idHash = (tokenHashIpfs.length - 1);
-    _mappingExtIdIPFS[extId] = ipfsId;
-    _mint(msg.sender, idHash, 1, "");
-  }
-
-  function deleteTask () public {
-    require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-    require(!_tokenHashExists[ipfsId], "Hash already exists");
-    _tokenHashExists[ipfsId] = true;
-    tokenHashIpfs.push(ipfsId);
-    uint idHash = (tokenHashIpfs.length - 1);
-    _mappingExtIdIPFS[extId] = ipfsId;
-    _mint(msg.sender, idHash, 1, "");
-  }
-
+        return append("https://ipfs.io/ipns/k51qzi5uqu5diitbr0kyw2jut5z6d06hm923t1mqaygudw4zf2u1ocbip88ieq", tokenId, ".json");
+    }
 
 }
