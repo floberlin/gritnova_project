@@ -11,6 +11,7 @@ out/
 /gui/node_modules
 /gui/.pnp
 /gui/.pnp.js
+/gui/package-lock.json
 
 # files
 *.env

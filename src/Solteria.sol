@@ -36,7 +36,7 @@ contract Solteria is ERC1155, AccessControl, ReentrancyGuard  {
      function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
-    
+     
     /*****************************************/
 
     // start of role definitions
