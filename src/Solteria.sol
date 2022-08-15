@@ -200,6 +200,8 @@ contract Solteria is ERC1155, AccessControl, ReentrancyGuard {
         Itreasury(treasury).withdrawReward(msg.sender, _tokenID, reward);
     }
 
+    
+
     //   function deleteTask (string memory ipfsID) public {
     //     require(hasRole(EMPLOYER_ROLE, msg.sender), "Caller is not a employer");
     //     uint256 _tokenID = this.getTokenID(ipfsID);
