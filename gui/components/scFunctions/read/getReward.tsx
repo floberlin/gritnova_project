@@ -15,7 +15,7 @@ export function GetReward({ tokenId } : { tokenId: any }) {
   })
   
   return (
-    ( (isSuccessTokenId && (reward !== undefined)) && <div> {utils.formatEther(reward.toString())} {chain?.name === 'Mumbai' ? "ETH" : "EVMOS"}</div> ) || <div> 0 </div>
+    ( (isSuccessTokenId && (reward !== undefined)) && <div> {utils.formatEther(reward.toString())} {chain?.name === 'Mumbai' ? "ETH" : "Matic"}</div> ) || <div> 0 </div>
   )
 }
 

@@ -12,7 +12,7 @@ async function GetIPFS(tasks: string | Result | undefined) {
   
   let ipfs = new Array<JSON>;
   if (tasks !== undefined) {
-      for (let i = 10; i < tasks.length; i++) { // 10 is the index of the first task for testing purposes
+      for (let i = 0; i < tasks.length; i++) { // 10 is the index of the first task for testing purposes
         const task = await fetch('https://gateway.pinata.cloud/ipfs/' + tasks[i])
         ipfs.push(await task.json());
     }
@@ -54,7 +54,7 @@ function TaskOverview() {
         setIsLoaded(false);
         console.log(e);
       });
-  });
+  }, [isSuccess, tasks]);
   
 
   return (
@@ -83,11 +83,11 @@ key={i}
 <h2 className="card-title">{item.name}</h2>
 <p>{item.description}</p>
 <div className="badge badge-outline">{item.attributes[0].value}</div>
-<div className="badge badge-outline badge-success">Reward: <GetReward tokenId={i+10} /></div> 
+<div className="badge badge-outline badge-success">Reward: <GetReward tokenId={i} /></div> 
 <div className="card-actions justify-end">
 
 
-<Link className="btn btn-primary my-8" href={"/tasks/"+tasks?.[i+10]}>Details</Link>
+<Link className="btn btn-primary my-8" href={"/tasks/"+tasks?.[i]}>Details</Link>
 </div>
 </div>
 </div>
