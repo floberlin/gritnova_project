@@ -219,6 +219,14 @@ contract Solteria is ERC1155, AccessControl, ReentrancyGuard {
         return result;
     }
 
+    function getTasks() public view returns (string[] memory) {
+        string[] memory result = new string[](tokenID);
+        for (uint256 j = 0; j < tokenID; j++) {
+            result[j] = tokenIDtoIPFS[j];
+        }
+        return result;
+    }
+
     function getClaimers(string memory ipfsID)
         public
         view

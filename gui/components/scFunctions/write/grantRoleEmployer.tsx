@@ -8,7 +8,7 @@ import Solteria from '../../../utils/Solteria.json'
 export function GrantRoleEmployer() {
 
   const { chain } = useNetwork()
-  const contractAddr = chain?.name === 'Mumbai' ? '0x374169EdD0F686c14ED0A5074B51AF634C556909' : '0x374169EdD0F686c14ED0A5074B51AF634C556909'
+  const contractAddr = chain?.name === 'Mumbai' ? '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59' : '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59'
 
   const { config, error: prepareError, isError: isPrepareError, } = usePrepareContractWrite({
     addressOrName: contractAddr,
