@@ -17,4 +17,10 @@ a {
 
 @tailwind base;
 @tailwind components;
+
+@font-face {
+  font-family: 'SangBleuKingdom';
+  src: local('SangBleuKingdom'), url(/SangBleuKingdom-Light.otf) format('otf');
+}
+
 @tailwind utilities;

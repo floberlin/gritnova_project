@@ -1,3 +1,4 @@
+import { ethers } from "ethers";
 import {
   usePrepareContractWrite,
   useContractWrite,
@@ -6,7 +7,7 @@ import {
 } from "wagmi";
 import Solteria from "../../../utils/Solteria.json";
 
-export function ClaimTask({ ipfsId }: { ipfsId: any }) {
+export function DeleteTask({ ipfsId }: { ipfsId: any }) {
   const { chain } = useNetwork();
   const contractAddr = "0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4"
 
@@ -17,7 +18,7 @@ export function ClaimTask({ ipfsId }: { ipfsId: any }) {
   } = usePrepareContractWrite({
     addressOrName: contractAddr,
     contractInterface: Solteria.abi,
-    functionName: "claimTask",
+    functionName: "deleteTask",
     args: [ipfsId],
   });
 
@@ -29,29 +30,12 @@ export function ClaimTask({ ipfsId }: { ipfsId: any }) {
 
   return (
     <div>
-      <button
-        className="btn btn-primary "
-        disabled={!write || isLoading || isPrepareError}
-        onClick={() => write?.()}
-      >
-        {isLoading ? "Claiming..." : "Claim Task & Start Work"}
+      <button className="btn btn-link btn-red btn-xs" onClick={() => write?.()}>
+        {!isLoading && !isSuccess ? "Delete" : ""}
+        {isLoading ? "Deleting..." : ""}
+        {!isLoading && isSuccess ? "Task deleted!" : ""}
       </button>
-      {isSuccess && (
-        <>
-          <div className="toast toast-end">
-            <div className="alert alert-success">
-              <div>
-                <div>
-                  Task claimed!
-                  {/* <div>
-            <a href={`https://evm.evmos.dev/tx/${data?.hash}`}>Evmos Explorer</a>
-          </div> */}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+
       {isError && (
         // <><div className="toast toast-end">
         //     <div className="alert alert-error">

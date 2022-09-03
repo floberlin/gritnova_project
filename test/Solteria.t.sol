@@ -5,18 +5,28 @@ import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Solteria} from "../src/Solteria.sol";
 import {SolteriaTreasury} from "../src/SolteriaTreasury.sol";
+import {SolteriaToken} from "../src/SolteriaToken.sol";
 
 contract SolteriaTest is Test {
     Solteria solteria;
     SolteriaTreasury solteriaTreasury;
+    SolteriaToken solteriaToken;
     address internal employer;
+    address internal deployer;
     address internal contractor;
     address internal contractor2;
     address internal contractor3;
 
     function setUp() public {
-        solteria = new Solteria();
+       
         solteriaTreasury = new SolteriaTreasury();
+        deployer = vm.addr(0xDe);
+        vm.deal(deployer, 100 ether);
+        vm.label(deployer, "deployer");
+        vm.prank(deployer);
+        solteriaToken = new SolteriaToken();
+
+        solteria = new Solteria(address(solteriaTreasury), address(solteriaToken));
 
         // set up employer
         employer = vm.addr(0xA11CE);
@@ -47,7 +57,11 @@ contract SolteriaTest is Test {
         solteria.grantRoleContractor();
 
         // set up contracts
-        solteria.setContract(address(solteriaTreasury));
+        vm.prank(deployer);
+        solteriaToken.approve(deployer, 10000000000000000000000000);
+        vm.prank(deployer);
+        solteriaToken.transferFrom(deployer, address(solteria), 10000000000000000000000000);
+
         solteriaTreasury.setSolteria(address(solteria));
     }
 
@@ -61,7 +75,8 @@ contract SolteriaTest is Test {
     function testEmployerCanCreatePrivateTask() public {
         vm.prank(employer);
         solteria.createPrivateTask{value: 1 ether}(
-            "QmIPFSIDPrivate", contractor
+            "QmIPFSIDPrivate",
+            contractor
         );
         assertEq(solteria.balanceOf(address(solteriaTreasury), 0), 1);
     }
@@ -140,7 +155,6 @@ contract SolteriaTest is Test {
         assertEq(solteria.balanceOf(contractor, 0), 1);
     }
 
-
     function testContractorCanClaimFundsMultiple() public {
         vm.prank(employer);
         solteria.createTask{value: 1 ether}("QmIPFSID");
@@ -181,6 +195,22 @@ contract SolteriaTest is Test {
         assertEq(solteria.balanceOf(contractor, 0), 1);
     }
 
+    function testContractorCanClaimFundsEmpolyerCanBurnMultiple() public {
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID");
+        assertEq(solteria.balanceOf(address(solteriaTreasury), 0), 1);
+        assertEq(solteria.balanceOf(contractor, 0), 0);
+
+        vm.prank(contractor);
+        solteria.claimTask("QmIPFSID");
+
+        vm.prank(contractor2);
+        solteria.claimTask("QmIPFSID");
+
+        vm.prank(employer);
+        solteria.deleteTask("QmIPFSID");
+    }
+
     // Contractor negative testcases
 
     function testFailContractorCanClaimFundsNOCLAIM() public {
@@ -203,5 +233,47 @@ contract SolteriaTest is Test {
         solteria.claimFunds("QmIPFSID");
         assertEq(solteria.balanceOf(address(solteriaTreasury), 0), 0);
         assertEq(solteria.balanceOf(contractor, 0), 1);
+    }
+
+    // positive testcases - no roles required
+
+    function testAnyoneCanListTasks() public {
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID2");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID3");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID4");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID5");
+
+        solteria.getTasks();
+    }
+
+    function testAnyoneCanListTasksAndGetStatus() public {
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID2");
+        vm.prank(employer);
+        solteria.approveCompletedTask("QmIPFSID2", contractor);
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID3");
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID4");
+        vm.prank(employer);
+        solteria.approveCompletedTask("QmIPFSID4", contractor);
+        vm.prank(employer);
+        solteria.createTask{value: 1 ether}("QmIPFSID5");
+
+        solteria.getTasks();
+
+        assertTrue(!solteria.getStatus("QmIPFSID"));
+        assertTrue(solteria.getStatus("QmIPFSID2"));
+        assertTrue(!solteria.getStatus("QmIPFSID3"));
+        assertTrue(solteria.getStatus("QmIPFSID4"));
+        assertTrue(!solteria.getStatus("QmIPFSID5"));
     }
 }

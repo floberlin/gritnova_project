@@ -1,44 +1,127 @@
 import { Result } from "ethers/lib/utils";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import Image from "next/image";
-import { ApproveCompletedTask } from '../../components/scFunctions/write/approveCompletedTask';
-import { ClaimTask } from '../../components/scFunctions/write/claimTask';
-import { ClaimFunds } from '../../components/scFunctions/write/claimFunds';
-import { GetStatus } from '../../components/scFunctions/read/getStatus';
+import { ApproveCompletedTask } from "../../components/scFunctions/write/approveCompletedTask";
+import { ClaimTask } from "../../components/scFunctions/write/claimTask";
+import { ClaimFunds } from "../../components/scFunctions/write/claimFunds";
+import { GetStatus } from "../../components/scFunctions/read/getStatus";
 import { GetClaimers } from "../../components/scFunctions/read/getClaimers";
-import { CompleteTask } from '../../components/scFunctions/write/completeTask';
-import { GetReward } from '../../components/scFunctions/read/getReward';
-import { GetTokenID } from '../../components/scFunctions/read/getTokenID';
-import Solteria from '../../utils/Solteria.json'
-import { useNetwork, usePrepareContractWrite } from "wagmi";
+import { CompleteTask } from "../../components/scFunctions/write/completeTask";
+import { GetReward } from "../../components/scFunctions/read/getReward";
+import { GetTokenID } from "../../components/scFunctions/read/getTokenID";
+import Solteria from "../../utils/Solteria.json";
+import { useAccount, useNetwork, usePrepareContractWrite } from "wagmi";
+
+import storage from "../../utils/firebaseConfig";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import Link from "next/link";
+
+import { create } from "ipfs-http-client";
+
+const nodeIPFS = create({
+  host: "magentadao-backend.westeurope.cloudapp.azure.com",
+  port: 443,
+  protocol: "https",
+});
 
 interface ipfsData {
   name: string;
   description: string;
-  attributes: [{trait_type: string, value: string}];
+  attributes: [
+    { trait_type: string; value: string },
+    { trait_type: string; value: string }
+  ];
   image: string;
   external_url: string;
 }
 
+async function GetIPFS(ipfsId: any) {
+  // const task = await fetch("https://gateway.pinata.cloud/ipfs/" + ipfsId);
+  // return task.json();
 
-async function GetIPFS(ipfsId: string | Result | undefined) {
-  const task = await fetch('https://gateway.pinata.cloud/ipfs/' + ipfsId)   
-  return task.json();  
+  try {
+    const source = nodeIPFS.cat(ipfsId);
+    const data = [];
+    for await (const chunk of source) {
+      data.push(chunk);
+    }
+    const byteArray = data.toString().split(",");
+    var task = "";
+    for (let j = 0; j < byteArray.length; j++) {
+      task += String.fromCharCode(Number(byteArray[j]));
+    }
+    return JSON.parse(task);
+  } catch (error) {
+    console.log(error);
+    const source = nodeIPFS.cat(ipfsId);
+    const data = [];
+    for await (const chunk of source) {
+      data.push(chunk);
+    }
+    const byteArray = data.toString().split(",");
+    var task = "";
+    for (let j = 0; j < byteArray.length; j++) {
+      task += String.fromCharCode(Number(byteArray[j]));
+    }
   }
 
+  return JSON.parse(task);
+}
 
 function TaskDetail() {
+  const { address } = useAccount();
 
-  const { chain } = useNetwork()
-  const contractAddr = chain?.name === 'Mumbai' ? '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59' : '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59'
+  // State to store uploaded file
+  const [file, setFile] = useState("");
 
+  // progress
+  const [percent, setPercent] = useState(0);
 
-  const { isError: isErrorEmployer, } = usePrepareContractWrite({
+  // Handle file upload event and update state
+  function handleChange(event: {
+    target: { files: SetStateAction<string>[] };
+  }) {
+    setFile(event.target.files[0]);
+  }
+
+  const handleUpload = () => {
+    if (!file) {
+      alert("Please upload a txt file first!");
+    }
+
+    const storageRef = ref(storage, `/files/${ipfsId}${address}.txt`);
+
+    // progress can be paused and resumed. It also exposes progress updates.
+    // Receives the storage reference and the file to upload.
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const percent = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+
+        // update progress
+        setPercent(percent);
+      },
+      (err) => console.log(err),
+      () => {
+        // download url
+        getDownloadURL(uploadTask.snapshot.ref).then((url) => {});
+      }
+    );
+  };
+
+  const { chain } = useNetwork();
+  const contractAddr = "0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4"
+
+  const { isError: isErrorEmployer } = usePrepareContractWrite({
     addressOrName: contractAddr,
     contractInterface: Solteria.abi,
-    functionName: 'grantRoleEmployer',
-  })
+    functionName: "grantRoleEmployer",
+  });
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [data, setData] = useState<ipfsData>();
@@ -55,56 +138,140 @@ function TaskDetail() {
         setIsLoaded(true);
       })
       .catch((e) => {
-        setIsLoaded(false);
         console.log(e);
       });
+  }, [ipfsId, claimers]);
+
+  const { isError: isPrepareError } = usePrepareContractWrite({
+    addressOrName: contractAddr,
+    contractInterface: Solteria.abi,
+    functionName: "claimTask",
+    args: [ipfsId],
   });
 
-  
-  return (
-    <main className="min-h-screen">
-    
-      <div className="grid justify-items-center">
+  const [showChild, setShowChild] = useState(false);
+  useEffect(() => {
+    setShowChild(true);
+  }, []);
 
-      <div className="text-2xl font-bold mt-8">Task Details</div>
-      {!isLoaded && <p>loading task...</p>}
-      
-      {isLoaded && (data) && (
+  if (!showChild) {
+    return null;
+  }
 
-        <div className="grid justify-items-center grid-cols-1 gap-4">
-        <Image src={data.image} width="200%" height="100%" quality="100" alt="NFT"/>   
-      <p>Title: {data.name}</p>
-      <p>Description: {data.description}</p>
-      <p>Type: {data.attributes[0].value}</p>
-      <p>ERC-1155 Token ID: {tokenId}</p>
-      <p>Rewards: <GetReward tokenId={tokenId}/></p>
-      <p>Status: {status ? "Done" : "Open for Claimers"}</p>
+  if (typeof window === "undefined") {
+    return <></>;
+  } else {
+    return (
+      <main className="min-h-screen">
+        <div className="grid justify-items-center">
+          <div className="text-2xl font-bold mt-8">Task Details</div>
+          {!isLoaded && <button className="btn btn-primary" onClick={() => {(window as any).location.reload()}}>Reload tasks</button>}
 
-      <ClaimTask ipfsId={ipfsId}/>
-      <button className="btn btn-primary" disabled={!isErrorEmployer} onClick={() => (window as any).location = 'mailto:yourmail@domain.com'}>Submit work</button>
-      <CompleteTask ipfsId={ipfsId}/>
-      <ClaimFunds ipfsId={ipfsId}/>
+          {isLoaded && data && (
+            <div className="grid justify-items-center grid-cols-1 gap-4">
+              <Image
+                src={data.image}
+                width="200%"
+                height="100%"
+                quality="100"
+                alt="NFT"
+              />
+              <p>Title: {data.name}</p>
+              <p>Description: {data.description}</p>
+              <p>Type: {data.attributes[0].value}</p>
+              <p>
+                License Requirement:{" "}
+                {data?.attributes[1]?.value === undefined
+                  ? "none"
+                  : data.attributes[1].value}
+              </p>
+              <p>ERC-1155 Token ID: {tokenId}</p>
+              <p>
+                Rewards: <GetReward tokenId={tokenId} />
+              </p>
+              <p>Status: {status ? "Done" : "Open for Claimers"}</p>
 
-      
+              <ClaimTask ipfsId={ipfsId} />
 
-      <div className="text-2xl font-bold mt-8">Claims History</div>
-      {claimers?.map((claimer) => ( 
-        <div className="grid justify-items-center grid-cols-1 gap-4" key={claimer}>
-          <p>Claimer: {claimer}</p>
-          <ApproveCompletedTask ipfsId={ipfsId} claimer={claimer}/>
+              <button
+                disabled={!isErrorEmployer || !isPrepareError}
+                className="btn btn-primary modal-button"
+              >
+                {" "}
+                <label htmlFor="my-modal">Submit work</label>{" "}
+              </button>
+              <input type="checkbox" id="my-modal" className="modal-toggle" />
+              <div className="modal">
+                <div className="modal-box grid justify-items-center">
+                  <label
+                    htmlFor="my-modal"
+                    className="btn btn-sm btn-circle absolute right-2 top-2"
+                  >
+                    ✕
+                  </label>
+                  <div>
+                    {" "}
+                    <input
+                      className="center w-full text-sm text-slate-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-yellow-50 file:text-yellow-700
+                      hover:file:bg-yellow-100 "
+                      type="file"
+                      onChange={handleChange}
+                      accept="/*"
+                    />{" "}
+                  </div>
+                  <br />
+                  <button className="btn btn-primary" onClick={handleUpload}>
+                    Upload your work
+                  </button>
+                  <br />
+                  <progress
+                    className="progress progress-primary w-56"
+                    value={percent}
+                    max="100"
+                  ></progress>
+                  <div hidden={!(percent === 100)} className="text-center">
+                    {" "}
+                    Work uploaded!
+                  </div>
+                </div>
+              </div>
+
+              <CompleteTask ipfsId={ipfsId} />
+              <ClaimFunds ipfsId={ipfsId} />
+
+              <div className="text-2xl font-bold mt-8">Claims History</div>
+              {claimers?.map((claimer) => (
+                <div
+                  className="grid justify-items-center grid-cols-1 gap-4"
+                  key={claimer}
+                >
+                  <Link
+                    href={`https://firebasestorage.googleapis.com/v0/b/solteria-b7f21.appspot.com/o/files%2F${ipfsId}${claimer}.txt?alt=media&token=bbeac4fc-5c48-472e-b3be-b68e45d255da`}
+                  >
+                    <p className="link">
+                      {" "}
+                      Claimer: {claimer}{" "}
+                      <Image
+                        src="https://i.ibb.co/FYTHRRQ/foreign.png"
+                        alt="link"
+                        width="17px"
+                        height="17px"
+                      />
+                    </p>
+                  </Link>
+                  <ApproveCompletedTask ipfsId={ipfsId} claimer={claimer} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-          ))}
-      
-
-      </div>
-      )}
-    
-      </div>
-
-
-
-    </main>
-  );
+      </main>
+    );
+  }
 }
 
 export default TaskDetail;

@@ -7,15 +7,6 @@ const nextConfig = {
   images: {
     domains: ['i.ibb.co'],
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/tasks',
-        permanent: true,
-      },
-    ]
-  },
 };
 
 module.exports = nextConfig;

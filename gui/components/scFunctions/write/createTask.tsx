@@ -2,12 +2,12 @@ import { ethers } from 'ethers'
 import { usePrepareContractWrite, useContractWrite, useNetwork,useWaitForTransaction } from 'wagmi'
 import Solteria from '../../../utils/Solteria.json'
 
-export function CreateTask({ipfsContent, val} : {ipfsContent: any, val: any}) {
+export function CreateTask({ipfsContent, val, htmlFor} : {ipfsContent: string, val: string, htmlFor: string}) {
 
 
-  const ipfsId = ipfsContent;//tbd
+  const ipfsId = ipfsContent;
   const { chain } = useNetwork()
-  const contractAddr = chain?.name === 'Mumbai' ? '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59' : '0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59'
+  const contractAddr = "0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4"
 
   const { config, error: prepareError, isError: isPrepareError, } = usePrepareContractWrite({
     addressOrName: contractAddr,
@@ -28,23 +28,12 @@ export function CreateTask({ipfsContent, val} : {ipfsContent: any, val: any}) {
 
   return (
     <div>
-      <button className="btn btn-primary " disabled={!write || isLoading} onClick={() => write?.()}>
-        {isLoading ? 'Creating...' : 'Confirm'}
+      <button className={!isSuccess ? "btn btn-primary" : "btn btn-success"} disabled={!write || isLoading || isSuccess} onClick={() => write?.()}>
+      {(!isLoading && !isSuccess) ? 'Confirm' : ''}
+        {(isLoading ) ? 'Creating...' : ''}
+        {(!isLoading && isSuccess) ? 'Task created!' : ''}
       </button>
-      {isSuccess && (
-        <><div className="toast toast-end">
-        <div className="alert alert-success">
-          <div>
-          <div>
-          Task created!
-          {/* <div>
-            <a href={`https://evm.evmos.dev/tx/${data?.hash}`}>Mumbai Explorer</a>
-          </div> */}
-        </div>
-          </div>
-        </div>
-      </div></>
-      )}
+      
       {(isError) && (
         
       // <><div className="toast toast-end">
