@@ -36,7 +36,7 @@ const Navbar = () => {
   } else {
     return (
       <header>
-        <div className="navbar bg-base-100">
+        <div className="navbar bg-blue-700/10">
           <div className="navbar-start">
             <div className="dropdown">
               <label tabIndex={0} className="btn btn-ghost lg:hidden">
@@ -63,7 +63,7 @@ const Navbar = () => {
                   <Link href={"/tasks"}>Tasks</Link>
                 </li>
                 <li>
-                  <Link href={"/staking"}>Staking</Link>
+                  <Link href={"/staking"}>Stake</Link>
                 </li>
                 <div hidden={!isErrorEmployer}>
                   <li>
@@ -99,10 +99,10 @@ const Navbar = () => {
           <div className="navbar-center hidden lg:flex">
             <ul className="menu menu-horizontal p-0">
               <li>
-                <Link className="font-solteria" href={"/tasks"}>Tasks</Link>
+                <Link  href={"/tasks"}>Tasks</Link>
               </li>
               <li>
-                <Link href={"/staking"}>Staking</Link>
+                <Link href={"/staking"}>Stake</Link>
               </li>
               <div hidden={!isErrorEmployer}>
                 <li>

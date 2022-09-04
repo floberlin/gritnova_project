@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Result } from "ethers/lib/utils";
 import { useRouter } from "next/router";
 import { SetStateAction, useEffect, useState } from "react";
@@ -115,7 +116,7 @@ function TaskDetail() {
   };
 
   const { chain } = useNetwork();
-  const contractAddr = "0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4"
+  const contractAddr = "0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4";
 
   const { isError: isErrorEmployer } = usePrepareContractWrite({
     addressOrName: contractAddr,
@@ -165,33 +166,58 @@ function TaskDetail() {
       <main className="min-h-screen">
         <div className="grid justify-items-center">
           <div className="text-2xl font-bold mt-8">Task Details</div>
-          {!isLoaded && <button className="btn btn-primary" onClick={() => {(window as any).location.reload()}}>Reload tasks</button>}
+          {!isLoaded && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                (window as any).location.reload();
+              }}
+            >
+              Reload tasks
+            </button>
+          )}
 
           {isLoaded && data && (
-            <div className="grid justify-items-center grid-cols-1 gap-4">
-              <Image
-                src={data.image}
-                width="200%"
-                height="100%"
-                quality="100"
-                alt="NFT"
-              />
-              <p>Title: {data.name}</p>
-              <p>Description: {data.description}</p>
-              <p>Type: {data.attributes[0].value}</p>
-              <p>
-                License Requirement:{" "}
-                {data?.attributes[1]?.value === undefined
-                  ? "none"
-                  : data.attributes[1].value}
-              </p>
-              <p>ERC-1155 Token ID: {tokenId}</p>
-              <p>
-                Rewards: <GetReward tokenId={tokenId} />
-              </p>
+            <div className="grid justify-items-center grid-cols-1 gap-4 mt-2">
+              <div className="stats stats-vertical lg:stats-horizontal shadow">
+                <div className="stat">
+                  <div className="stat-title">Rewards</div>
+                  <div className="stat-value">
+                    <GetReward tokenId={tokenId} />
+                  </div>
+                </div>
+
+                <div className="stat">
+                  <div className="stat-title">Type</div>
+                  <div className="stat-value">{data.attributes[0].value}</div>
+                </div>
+
+                <div className="stat">
+                  <div className="stat-title">License</div>
+                  <div className="stat-value">
+                    {data?.attributes[1]?.value === undefined
+                      ? "none"
+                      : data.attributes[1].value}
+                  </div>
+                </div>
+              </div>
+              <div className="card w-96 bg-base-100 shadow-xl">
+                <figure>
+                  <img src={data.image} alt="Task" />
+                </figure>
+                <div className="card-body">
+                  <h2 className="card-title">{data.name}</h2>
+                  {data.description}
+                  <div className="card-actions justify-end">
+                  <ClaimTask ipfsId={ipfsId} />
+                  </div>
+                </div>
+              </div>
+
               <p>Status: {status ? "Done" : "Open for Claimers"}</p>
 
-              <ClaimTask ipfsId={ipfsId} />
+              <p>ERC-1155 Token ID: {tokenId}</p>
+              
 
               <button
                 disabled={!isErrorEmployer || !isPrepareError}

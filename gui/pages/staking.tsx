@@ -82,11 +82,11 @@ const Staking: NextPage = () => {
                             />
                             <button
                               className="btn btn-primary"
-                              onClick={() => {}}
+                              onClick={() => {window.open("https://app.uniswap.org/#/swap?use=v1&inputCurrency=ETH&outputCurrency=0xec70dcb4a1efa46b8f2d97c310c9c4790ba5ffa8&chain=arbitrum")}}
                             >
                               Stake your{" "}
                               {typeof data === "undefined"
-                                ? "Evmos"
+                                ? "ETH"
                                 : data?.symbol}
                             </button>
                           </p>

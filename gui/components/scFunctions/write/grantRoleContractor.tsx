@@ -59,8 +59,8 @@ export function GrantRoleContractor() {
                 <div>
                   You are now an Contractor
                   <div>
-                    <a href={`https://evm.evmos.dev/tx/${data?.hash}`}>
-                      Evmos Explorer
+                    <a href={`https://evm.ETH.dev/tx/${data?.hash}`}>
+                      ETH Explorer
                     </a>
                   </div>
                 </div>

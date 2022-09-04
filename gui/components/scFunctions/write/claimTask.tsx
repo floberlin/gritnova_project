@@ -44,7 +44,7 @@ export function ClaimTask({ ipfsId }: { ipfsId: any }) {
                 <div>
                   Task claimed!
                   {/* <div>
-            <a href={`https://evm.evmos.dev/tx/${data?.hash}`}>Evmos Explorer</a>
+            <a href={`https://evm.ETH.dev/tx/${data?.hash}`}>ETH Explorer</a>
           </div> */}
                 </div>
               </div>

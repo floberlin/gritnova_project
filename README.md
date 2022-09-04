@@ -2,12 +2,13 @@
 
 IDE using https://book.getfoundry.sh 
 
-GUI using https://ionicframework.com/docs/react 
+GUI using next.js
 
 
+# Arbitrum Goerli Contract Addresses: 
 
-# Mumbai Contract Addresses: 
+token: 0xB48867b51c6D51f425e9d10c8c066A3471eeeF1F
 
-Solteria - 0xEA93a92d663BF9eeD87797087aEd3D6EE9e0eb59
+treasury: 0x7eafFdD68326E911310C58FB3C4E09701862DbB4
 
-Treasury - 0x938d5FC3DeB3f33701439DA65521c4b17181fbDD
+solteria: 0x048e3eB0eD956a6E09Fc7ffB79E648F8353B1CC4
